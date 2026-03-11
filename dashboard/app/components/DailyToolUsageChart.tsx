@@ -9,12 +9,13 @@ import {
   Legend,
 } from "recharts";
 import type { DailyToolUsageEntry } from "~/lib/types";
+import { CHART_HEIGHT, DATE_MM_DD_SLICE_START } from "~/lib/constants";
 
 export function DailyToolUsageChart({ data }: { data: DailyToolUsageEntry[] }) {
   if (data.length === 0) {
     return (
       <ChartCard>
-        <div className="flex items-center justify-center h-[300px] text-gray-400">
+        <div className="flex items-center justify-center text-gray-400" style={{ height: CHART_HEIGHT }}>
           データがありません
         </div>
       </ChartCard>
@@ -23,12 +24,12 @@ export function DailyToolUsageChart({ data }: { data: DailyToolUsageEntry[] }) {
 
   const chartData = data.map((d) => ({
     ...d,
-    date: d.date.slice(5), // MM-DD
+    date: d.date.slice(DATE_MM_DD_SLICE_START),
   }));
 
   return (
     <ChartCard>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />

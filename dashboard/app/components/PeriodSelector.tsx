@@ -1,17 +1,12 @@
 import { useSearchParams } from "react-router";
-
-const PERIODS = [
-  { days: 7, label: "7日" },
-  { days: 30, label: "30日" },
-  { days: 0, label: "全期間" },
-];
+import { PERIOD_OPTIONS } from "~/lib/constants";
 
 export function PeriodSelector({ currentDays }: { currentDays: number }) {
   const [, setSearchParams] = useSearchParams();
 
   return (
     <div className="flex gap-2">
-      {PERIODS.map(({ days, label }) => (
+      {PERIOD_OPTIONS.map(({ days, label }) => (
         <button
           key={days}
           onClick={() => setSearchParams({ days: String(days) })}

@@ -302,7 +302,7 @@ def post_to_api(dashboard_url, payload) -> None:
     url = urljoin(dashboard_url.rstrip("/") + "/", "api/v1/usage/ingest")
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "claude-code-usage-dashboard/1.0",  # Botと判定んされないようにするため
+        "User-Agent": "claude-code-usage-dashboard/1.0",  # Botと判定されないようにするため
     }
 
     client_id = os.environ.get("CF_ACCESS_CLIENT_ID", "")

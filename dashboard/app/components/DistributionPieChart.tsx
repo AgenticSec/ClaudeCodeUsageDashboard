@@ -1,5 +1,6 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import type { DistributionEntry } from "~/lib/types";
+import { CHART_HEIGHT } from "~/lib/constants";
 
 const COLORS = [
   "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
@@ -9,6 +10,10 @@ const COLORS = [
 ];
 
 const RADIAN = Math.PI / 180;
+const PIE_OUTER_RADIUS = 90;
+const PIE_MIN_LABEL_PERCENT = 0.05;
+const PIE_LABEL_MAX_LENGTH = 8;
+const PIE_LABEL_FONT_SIZE = 11;
 
 function renderInsideLabel({
   cx,
@@ -27,11 +32,11 @@ function renderInsideLabel({
   name: string;
   percent: number;
 }) {
-  if (percent < 0.05) return null;
+  if (percent < PIE_MIN_LABEL_PERCENT) return null;
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const label = name.length > 8 ? name.slice(0, 7) + "…" : name;
+  const label = name.length > PIE_LABEL_MAX_LENGTH ? name.slice(0, PIE_LABEL_MAX_LENGTH - 1) + "…" : name;
   return (
     <text
       x={x}
@@ -39,7 +44,7 @@ function renderInsideLabel({
       fill="white"
       textAnchor="middle"
       dominantBaseline="central"
-      fontSize={11}
+      fontSize={PIE_LABEL_FONT_SIZE}
       fontWeight={500}
     >
       <tspan x={x} dy="-0.5em">{label}</tspan>
@@ -57,7 +62,7 @@ export function DistributionPieChart({ title, data }: DistributionPieChartProps)
   if (data.length === 0) {
     return (
       <ChartCard title={title}>
-        <div className="flex items-center justify-center h-[300px] text-gray-400">
+        <div className="flex items-center justify-center text-gray-400" style={{ height: CHART_HEIGHT }}>
           データがありません
         </div>
       </ChartCard>
@@ -66,7 +71,7 @@ export function DistributionPieChart({ title, data }: DistributionPieChartProps)
 
   return (
     <ChartCard title={title}>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <PieChart>
           <Pie
             data={data}
@@ -74,7 +79,7 @@ export function DistributionPieChart({ title, data }: DistributionPieChartProps)
             nameKey="name"
             cx="50%"
             cy="50%"
-            outerRadius={90}
+            outerRadius={PIE_OUTER_RADIUS}
             label={renderInsideLabel}
             labelLine={false}
           >

@@ -16,11 +16,15 @@ export function meta() {
   ];
 }
 
+import { PERIOD_OPTIONS, DEFAULT_DAYS } from "~/lib/constants";
+
+const VALID_DAYS: readonly number[] = PERIOD_OPTIONS.map((p) => p.days);
+
 export async function loader({ context, request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const daysParam = url.searchParams.get("days");
-  const days = daysParam ? parseInt(daysParam, 10) : 7;
-  const validDays = [7, 30, 0].includes(days) ? days : 7;
+  const days = daysParam ? parseInt(daysParam, 10) : DEFAULT_DAYS;
+  const validDays = VALID_DAYS.includes(days) ? days : DEFAULT_DAYS;
 
   const db = context.cloudflare.env.DB;
   const data = await getDashboardData(db, validDays);

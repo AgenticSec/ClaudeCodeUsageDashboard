@@ -1,18 +1,16 @@
 import type { RecentSessionEntry } from "~/lib/types";
+import { formatTokens } from "~/lib/format";
+
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
 
 function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  if (seconds < SECONDS_PER_MINUTE) return `${seconds}s`;
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  if (minutes < MINUTES_PER_HOUR) return `${minutes}m`;
+  const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+  const remainingMinutes = minutes % MINUTES_PER_HOUR;
   return `${hours}h${remainingMinutes}m`;
-}
-
-function formatTokens(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(0)}K`;
-  return String(tokens);
 }
 
 function formatDate(isoString: string): string {

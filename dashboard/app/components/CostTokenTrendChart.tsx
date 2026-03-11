@@ -10,18 +10,14 @@ import {
   Legend,
 } from "recharts";
 import type { DailyTrendEntry } from "~/lib/types";
-
-function formatTokens(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
-  return String(value);
-}
+import { CHART_HEIGHT_LARGE, DATE_MM_DD_SLICE_START } from "~/lib/constants";
+import { formatTokens } from "~/lib/format";
 
 export function CostTokenTrendChart({ data }: { data: DailyTrendEntry[] }) {
   if (data.length === 0) {
     return (
       <ChartCard>
-        <div className="flex items-center justify-center h-[350px] text-gray-400">
+        <div className="flex items-center justify-center text-gray-400" style={{ height: CHART_HEIGHT_LARGE }}>
           データがありません
         </div>
       </ChartCard>
@@ -30,12 +26,12 @@ export function CostTokenTrendChart({ data }: { data: DailyTrendEntry[] }) {
 
   const chartData = data.map((d) => ({
     ...d,
-    date: d.date.slice(5), // MM-DD
+    date: d.date.slice(DATE_MM_DD_SLICE_START),
   }));
 
   return (
     <ChartCard>
-      <ResponsiveContainer width="100%" height={350}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT_LARGE}>
         <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />

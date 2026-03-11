@@ -1,4 +1,5 @@
 import type { KpiData } from "~/lib/types";
+import { formatTokens } from "~/lib/format";
 
 const numberFormat = new Intl.NumberFormat("ja-JP");
 const currencyFormat = new Intl.NumberFormat("en-US", {
@@ -7,16 +8,6 @@ const currencyFormat = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-function formatTokens(tokens: number): string {
-  if (tokens >= 1_000_000) {
-    return `${(tokens / 1_000_000).toFixed(1)}M`;
-  }
-  if (tokens >= 1_000) {
-    return `${(tokens / 1_000).toFixed(1)}K`;
-  }
-  return String(tokens);
-}
 
 interface KpiCardProps {
   label: string;

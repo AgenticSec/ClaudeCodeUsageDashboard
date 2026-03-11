@@ -39,11 +39,6 @@ Web アプリケーション (React Router v7 SSR)
 ダッシュボード UI (Recharts)
 ```
 
-## 開発・デプロイ
-
-- ローカル開発の手順は [dashboard/README.md](dashboard/README.md) を参照してください。
-- デプロイ手順は [deploy/README.md](deploy/README.md) を参照してください。
-
 ## データ収集フック
 
 Stop フック（`.claude/hooks/session-uploader.py`）は Claude Code セッション終了時に自動実行されます。

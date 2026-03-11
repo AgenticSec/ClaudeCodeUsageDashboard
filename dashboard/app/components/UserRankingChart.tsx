@@ -8,6 +8,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import type { UserRankingEntry } from "~/lib/types";
+import { CHART_HEIGHT } from "~/lib/constants";
+
+const Y_AXIS_LABEL_WIDTH = 100;
+const Y_AXIS_LABEL_MAX_LENGTH = 12;
+const Y_AXIS_LABEL_FONT_SIZE = 12;
+const CHART_MARGIN = { left: 20, right: 20, top: 5, bottom: 5 };
 
 export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
   const chartData = data.map((entry) => ({
@@ -22,19 +28,18 @@ export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
 
   return (
     <ChartCard title="ユーザーランキング（コスト順）">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+        <BarChart data={chartData} layout="vertical" margin={CHART_MARGIN}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis type="number" tickFormatter={(v) => `$${v.toFixed(0)}`} />
           <YAxis
             type="category"
             dataKey="name"
-            width={100}
+            width={Y_AXIS_LABEL_WIDTH}
             tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
-              const maxLen = 12;
-              const label = payload.value.length > maxLen ? `${payload.value.slice(0, maxLen)}...` : payload.value;
+              const label = payload.value.length > Y_AXIS_LABEL_MAX_LENGTH ? `${payload.value.slice(0, Y_AXIS_LABEL_MAX_LENGTH)}...` : payload.value;
               return (
-                <text x={x - 95} y={y} dy={4} fontSize={12} textAnchor="start" fill="currentColor">
+                <text x={x - (Y_AXIS_LABEL_WIDTH - 5)} y={y} dy={4} fontSize={Y_AXIS_LABEL_FONT_SIZE} textAnchor="start" fill="currentColor">
                   {label}
                 </text>
               );
@@ -72,7 +77,7 @@ function ChartCard({
 function EmptyState() {
   return (
     <ChartCard title="ユーザーランキング（コスト順）">
-      <div className="flex items-center justify-center h-[300px] text-gray-400">
+      <div className="flex items-center justify-center text-gray-400" style={{ height: CHART_HEIGHT }}>
         データがありません
       </div>
     </ChartCard>
