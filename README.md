@@ -62,7 +62,16 @@ Stop フック（`.claude/hooks/session-uploader.py`）は Claude Code セッシ
 
 ### セットアップ
 
-1. `.claude/settings.json` に Stop フックを登録:
+データを収集したい各プロジェクトで、以下の手順でフックを登録します。
+
+1. `session-uploader.py` を対象プロジェクトの `.claude/hooks/` にコピー:
+
+```bash
+mkdir -p <対象プロジェクト>/.claude/hooks
+cp .claude/hooks/session-uploader.py <対象プロジェクト>/.claude/hooks/
+```
+
+2. 対象プロジェクトの `.claude/settings.json` に Stop フックを登録:
 
 ```json
 {
@@ -72,13 +81,19 @@ Stop フック（`.claude/hooks/session-uploader.py`）は Claude Code セッシ
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-uploader.py"
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/session-uploader.py"
           }
         ]
       }
     ]
   }
 }
+```
+
+3. 対象プロジェクトの `.env` にダッシュボードの送信先URLを設定:
+
+```bash
+CLAUDE_CODE_USAGE_DASHBOARD_URL=http://localhost:5173
 ```
 
 
