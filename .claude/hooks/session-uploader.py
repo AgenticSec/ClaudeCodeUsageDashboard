@@ -3,6 +3,9 @@
 
 This is a standalone CLI script for external API communication.
 JSON serialization is required for HTTP POST to the dashboard ingest API.
+
+Transcript format reference:
+  https://platform.claude.com/docs/en/agent-sdk/typescript
 """
 
 import json
@@ -203,7 +206,7 @@ def parse_transcript(records):
             }
     all_tools = list(tool_uses.values())
 
-    # Classify tools
+    # Classify tools into MCP / Subagent / Skill
     skill_events = []
     mcp_events = []
     subagent_events = []
@@ -213,6 +216,8 @@ def parse_transcript(records):
         ts = tool["timestamp"]
 
         if name.startswith("mcp__"):
+            # MCP: tool name = "mcp__<server>__<method>"
+            # e.g. "mcp__notion__notion-fetch" → server="notion", method="notion-fetch"
             parts = name.split("__")
             mcp_events.append(
                 {
@@ -223,6 +228,7 @@ def parse_transcript(records):
                 }
             )
         elif name == "Agent":
+            # Subagent: tool name = "Agent", input.subagent_type = "Explore" | "Plan" | etc.
             subagent_events.append(
                 {
                     "subagent_type": tool["input"].get("subagent_type"),
@@ -230,7 +236,8 @@ def parse_transcript(records):
                 }
             )
 
-    # Also extract skills from user messages (<command-message> tags)
+    # Skill: extracted from user records containing <command-message> tags
+    # e.g. <command-message>commit</command-message> → skill_name="commit"
     user_skill_events = extract_user_skill_events(records)
     skill_events.extend(user_skill_events)
 
