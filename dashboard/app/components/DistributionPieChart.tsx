@@ -82,7 +82,12 @@ export function DistributionPieChart({ title, data }: DistributionPieChartProps)
               <Cell key={index} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip />
+          <Tooltip
+            contentStyle={{ backgroundColor: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", color: "var(--tooltip-text)" }}
+            labelStyle={{ color: "var(--tooltip-text)" }}
+            itemStyle={{ color: "var(--tooltip-text)" }}
+            formatter={(value: number, name: string) => [`${value} 件`, name]}
+          />
           <Legend />
         </PieChart>
       </ResponsiveContainer>

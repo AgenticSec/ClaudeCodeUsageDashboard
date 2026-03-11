@@ -5,6 +5,20 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+:root {
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #e5e7eb;
+  --tooltip-text: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tooltip-bg: #1f2937;
+    --tooltip-border: #374151;
+    --tooltip-text: #f3f4f6;
+  }
+}
+
 html,
 body {
   @apply bg-white dark:bg-gray-950;

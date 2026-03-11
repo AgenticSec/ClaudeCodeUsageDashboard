@@ -26,9 +26,24 @@ export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
         <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis type="number" tickFormatter={(v) => `$${v.toFixed(0)}`} />
-          <YAxis type="category" dataKey="name" width={100} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={100}
+            tick={({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+              const maxLen = 12;
+              const label = payload.value.length > maxLen ? `${payload.value.slice(0, maxLen)}...` : payload.value;
+              return (
+                <text x={x - 95} y={y} dy={4} fontSize={12} textAnchor="start" fill="currentColor">
+                  {label}
+                </text>
+              );
+            }}
+          />
           <Tooltip
             formatter={(value: number) => [`$${value.toFixed(2)}`, "コスト"]}
+            contentStyle={{ backgroundColor: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", color: "var(--tooltip-text)" }}
+            labelStyle={{ color: "var(--tooltip-text)" }}
           />
           <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
         </BarChart>

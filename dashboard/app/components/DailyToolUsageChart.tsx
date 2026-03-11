@@ -33,7 +33,10 @@ export function DailyToolUsageChart({ data }: { data: DailyToolUsageEntry[] }) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis />
-          <Tooltip />
+          <Tooltip
+            contentStyle={{ backgroundColor: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", color: "var(--tooltip-text)" }}
+            labelStyle={{ color: "var(--tooltip-text)" }}
+          />
           <Legend />
           <Area type="monotone" dataKey="mcp_count" stackId="1" fill="#3b82f6" stroke="#3b82f6" name="MCP" />
           <Area type="monotone" dataKey="subagent_count" stackId="1" fill="#10b981" stroke="#10b981" name="SubAgent" />

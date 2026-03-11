@@ -46,12 +46,14 @@ export function CostTokenTrendChart({ data }: { data: DailyTrendEntry[] }) {
               if (name === "コスト") return [`$${value.toFixed(2)}`, name];
               return [formatTokens(value), name];
             }}
+            contentStyle={{ backgroundColor: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", color: "var(--tooltip-text)" }}
+            labelStyle={{ color: "var(--tooltip-text)" }}
           />
           <Legend />
-          <Area yAxisId="tokens" type="monotone" dataKey="cache_read_tokens" stackId="1" fill="#93c5fd" stroke="#93c5fd" name="Cache Read" />
-          <Area yAxisId="tokens" type="monotone" dataKey="input_tokens" stackId="1" fill="#3b82f6" stroke="#3b82f6" name="Input" />
-          <Area yAxisId="tokens" type="monotone" dataKey="output_tokens" stackId="1" fill="#1d4ed8" stroke="#1d4ed8" name="Output" />
-          <Area yAxisId="tokens" type="monotone" dataKey="cache_creation_tokens" stackId="1" fill="#dbeafe" stroke="#dbeafe" name="Cache Creation" />
+          <Area yAxisId="tokens" type="monotone" dataKey="cache_read_tokens" stackId="1" fill="#60a5fa" stroke="#60a5fa" name="Cache Read" />
+          <Area yAxisId="tokens" type="monotone" dataKey="input_tokens" stackId="1" fill="#2563eb" stroke="#2563eb" name="Input" />
+          <Area yAxisId="tokens" type="monotone" dataKey="output_tokens" stackId="1" fill="#1e40af" stroke="#1e40af" name="Output" />
+          <Area yAxisId="tokens" type="monotone" dataKey="cache_creation_tokens" stackId="1" fill="#38bdf8" stroke="#38bdf8" name="Cache Creation" />
           <Line yAxisId="cost" type="monotone" dataKey="estimated_cost" stroke="#ef4444" strokeWidth={2} dot={false} name="コスト" />
         </ComposedChart>
       </ResponsiveContainer>
