@@ -1,5 +1,6 @@
 {
   "name": "claude-code-usage-dashboard",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
