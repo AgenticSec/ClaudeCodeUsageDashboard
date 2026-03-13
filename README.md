@@ -45,7 +45,11 @@ CLAUDE_CODE_USAGE_DASHBOARD_URL=https://dashboard.your-account.workers.dev
 ### アンインストール
 
 ```bash
-/plugin uninstall claude-code-usage-dashboard-plugin
+# プロジェクトから無効化
+claude plugin disable claude-code-usage-dashboard-plugin --scope local
+
+# 削除
+claude plugin uninstall claude-code-usage-dashboard-plugin --scope project
 ```
 
 
