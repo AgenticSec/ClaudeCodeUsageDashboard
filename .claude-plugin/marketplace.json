@@ -10,7 +10,7 @@
       "name": "claude-code-usage-dashboard-plugin",
       "description": "Tracks Claude Code session usage and sends data to a self-hosted dashboard.",
       "author": { "name": "SecDevLab Inc." },
-      "source": "./claude-code-usage-dashboard",
+      "source": "./plugin",
       "category": "monitoring"
     }
   ]
