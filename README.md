@@ -42,6 +42,23 @@ CLAUDE_CODE_USAGE_DASHBOARD_URL=http://localhost:5173
 CLAUDE_CODE_USAGE_DASHBOARD_URL=https://dashboard.your-account.workers.dev
 ```
 
+### 3. Start the dashboard
+
+Prerequisites: Node.js 18+, Wrangler CLI (`npm install -g wrangler`)
+
+```bash
+cd dashboard
+npm install
+
+# Apply migrations to local D1
+npx wrangler d1 migrations apply claude-code-usage --local
+
+# Start the dev server
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`.
+
 ### Local testing
 
 To test with a local clone of this repository instead of the remote:
@@ -51,7 +68,7 @@ To test with a local clone of this repository instead of the remote:
 claude plugin marketplace add ./
 
 # Install the plugin
-claude plugin install claude-code-usage-dashboard-plugin@sec-dev-lab --scope project
+claude plugin install claude-code-usage-dashboard-plugin@SecDevLab --scope project
 ```
 
 ### Uninstall
@@ -104,6 +121,40 @@ The Stop hook (`hooks/session-uploader.py`) runs automatically when a Claude Cod
 
 > Estimated costs are not stored in the DB. They are calculated dynamically at display time using token counts, models, and a pricing table.
 
+### How the Hook Works
+
+1. Stop hook fires at session end
+2. Parses `~/.claude/projects/{hash}/{session_id}.jsonl`
+3. Extracts skill usage, MCP tool usage, sub-agent usage, and token counts
+4. Retrieves email via `claude auth status`
+5. POSTs to the API with Service Token headers (runs in background)
+
+### Hook Configuration
+
+Verify the Stop hook is registered in `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-uploader.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Verify Claude Code is authenticated (email is used for user identification):
+
+```bash
+claude auth status
+```
 
 
 ## Project Structure
