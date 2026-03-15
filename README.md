@@ -24,7 +24,7 @@ Installing the plugin on a project enables automatic data submission to the dash
 
 ```bash
 # Register the marketplace (only registered locally, not published externally)
-claude plugin marketplace add https://github.com/sec-dev-lab/ClaudeCodeDashboard.git
+claude plugin marketplace add https://github.com/AgenticSec/ClaudeCodeUsageDashboard.git
 
 # Install the plugin (applies to the target project only)
 claude plugin install claude-code-usage-dashboard-plugin@SecDevLab --scope project
