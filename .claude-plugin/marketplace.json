@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "sec-dev-lab",
+  "name": "SecDevLab",
   "owner": { "name": "SecDevLab Inc." },
   "metadata": {
     "description": "Claude Code usage dashboard plugin for tracking session analytics"

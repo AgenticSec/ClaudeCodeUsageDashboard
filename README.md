@@ -27,7 +27,7 @@ Installing the plugin on a project enables automatic data submission to the dash
 claude plugin marketplace add https://github.com/sec-dev-lab/ClaudeCodeDashboard.git
 
 # Install the plugin (applies to the target project only)
-claude plugin install claude-code-usage-dashboard-plugin@sec-dev-lab --scope project
+claude plugin install claude-code-usage-dashboard-plugin@SecDevLab --scope project
 ```
 
 ### 2. Set environment variables

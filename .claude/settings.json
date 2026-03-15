@@ -1,5 +1,5 @@
 {
   "enabledPlugins": {
-    "claude-code-usage-dashboard-plugin@sec-dev-lab": true
+    "claude-code-usage-dashboard-plugin@SecDevLab": true
   }
 }
