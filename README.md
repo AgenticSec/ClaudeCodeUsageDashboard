@@ -25,7 +25,7 @@ Installing the plugin enables automatic data submission to the dashboard when a 
 ```bash
 # Register the marketplace (only registered locally, not published externally)
 claude plugin marketplace add https://github.com/AgenticSec/ClaudeCodeUsageDashboard.git
-  
+
 # Install the plugin (applies to all projects)
 claude plugin install claude-code-usage-dashboard-plugin@SecDevLab
 ```
