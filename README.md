@@ -25,7 +25,7 @@ Installing the plugin enables automatic data submission to the dashboard when a 
 ```bash
 # Register the marketplace (only registered locally, not published externally)
 claude plugin marketplace add https://github.com/AgenticSec/ClaudeCodeUsageDashboard.git
-
+  
 # Install the plugin (applies to all projects)
 claude plugin install claude-code-usage-dashboard-plugin@SecDevLab
 ```
@@ -53,7 +53,21 @@ CLAUDE_CODE_USAGE_DASHBOARD_URL=https://dashboard.your-account.workers.dev
 CLAUDE_CODE_USAGE_DASHBOARD_ALLOWED_DIRS=/Users/me/work/*,/Users/me/oss/*
 ```
 
-### 3. Start the dashboard
+### Verify setup
+
+You can verify the setup completed successfully:
+
+- **Plugin**: `claude plugin list` includes `claude-code-usage-dashboard-plugin`
+- **Environment**: `~/.claude-code-usage-dashboard/env` exists and `CLAUDE_CODE_USAGE_DASHBOARD_URL` is set
+- **Auth**: `claude auth status` shows your email (used for user identification)
+
+### Uninstall
+
+```bash
+claude plugin uninstall claude-code-usage-dashboard-plugin
+```
+
+## Running the dashboard locally
 
 Prerequisites: Node.js 18+, Wrangler CLI (`npm install -g wrangler`)
 
@@ -81,13 +95,6 @@ claude plugin marketplace add ./
 # Install the plugin
 claude plugin install claude-code-usage-dashboard-plugin@SecDevLab
 ```
-
-### Uninstall
-
-```bash
-claude plugin uninstall claude-code-usage-dashboard-plugin
-```
-
 
 ## Architecture
 
