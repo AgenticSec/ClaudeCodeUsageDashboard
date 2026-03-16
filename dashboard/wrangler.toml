@@ -1,0 +1,11 @@
+name = "claude-code-usage-dashboard"
+main = "./workers/app.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+assets = { directory = "./build/client" }
+
+[[d1_databases]]
+binding = "DB"
+database_name = "claude-code-usage-dashboard"
+database_id = "tobe-replaced-by-deploy.sh"
+migrations_dir = "migrations"

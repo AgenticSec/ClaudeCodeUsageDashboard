@@ -1,0 +1,14 @@
+.DS_Store
+.env
+.env.local
+
+# Node
+node_modules/
+
+# React Router
+.react-router/
+build/
+
+# Cloudflare
+.wrangler/
+.dev.vars

@@ -1,0 +1,43 @@
+{
+  "name": "claude-code-usage-dashboard",
+  "description": "Self-hosted dashboard to visualize Claude Code usage across your team",
+  "author": "SecDevLab Inc.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AgenticSec/ClaudeCodeUsageDashboard.git",
+    "directory": "dashboard"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "react-router dev",
+    "start": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "react-router typegen && tsc",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@react-router/cloudflare": "7.12.0",
+    "isbot": "^5.1.31",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router": "7.12.0",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.21.0",
+    "@cloudflare/workers-types": "^4.20250502.0",
+    "@react-router/dev": "7.12.0",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vite-tsconfig-paths": "^5.1.4",
+    "wrangler": "^4.20.0"
+  }
+}
