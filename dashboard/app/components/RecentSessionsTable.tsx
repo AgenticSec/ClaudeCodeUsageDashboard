@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router";
 import type { RecentSessionEntry } from "~/lib/types";
 import { formatTokens } from "~/lib/format";
 
@@ -28,6 +29,14 @@ export function RecentSessionsTable({
 }: {
   sessions: RecentSessionEntry[];
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const setFilter = (key: string, value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(key, value);
+    setSearchParams(newParams);
+  };
+
   if (sessions.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -49,6 +58,7 @@ export function RecentSessionsTable({
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium">User</th>
+              <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium">Repo</th>
               <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium">Model</th>
               <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium">Date</th>
               <th className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium">Duration</th>
@@ -72,8 +82,21 @@ export function RecentSessionsTable({
                   key={s.session_id}
                   className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 >
-                  <td className="py-2 px-2 text-gray-900 dark:text-gray-100">
-                    {s.email.split("@")[0]}
+                  <td className="py-2 px-2">
+                    <button
+                      onClick={() => setFilter("user_id", String(s.user_id))}
+                      className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                    >
+                      {s.email.split("@")[0]}
+                    </button>
+                  </td>
+                  <td className="py-2 px-2">
+                    <button
+                      onClick={() => setFilter("repo", s.repo_name)}
+                      className="text-green-600 dark:text-green-400 hover:underline cursor-pointer text-xs"
+                    >
+                      {s.repo_name}
+                    </button>
                   </td>
                   <td className="py-2 px-2 text-gray-600 dark:text-gray-400">
                     <span className="inline-block bg-gray-100 dark:bg-gray-800 rounded px-1.5 py-0.5 text-xs">

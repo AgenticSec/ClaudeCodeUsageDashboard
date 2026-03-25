@@ -3,6 +3,9 @@ import type { DashboardData } from "~/lib/types";
 import { getDashboardData } from "~/lib/db.server";
 import { KpiCards } from "~/components/KpiCards";
 import { PeriodSelector } from "~/components/PeriodSelector";
+import { UserSelector } from "~/components/UserSelector";
+import { RepoSelector } from "~/components/RepoSelector";
+import { ActiveFilters } from "~/components/ActiveFilters";
 import { UserRankingChart } from "~/components/UserRankingChart";
 import { DistributionPieChart } from "~/components/DistributionPieChart";
 import { CostTokenTrendChart } from "~/components/CostTokenTrendChart";
@@ -26,8 +29,12 @@ export async function loader({ context, request }: Route.LoaderArgs) {
   const days = daysParam ? parseInt(daysParam, 10) : DEFAULT_DAYS;
   const validDays = VALID_DAYS.includes(days) ? days : DEFAULT_DAYS;
 
+  const userIdParam = url.searchParams.get("user_id");
+  const userId = userIdParam ? parseInt(userIdParam, 10) : undefined;
+  const repo = url.searchParams.get("repo") || undefined;
+
   const db = context.cloudflare.env.DB;
-  const data = await getDashboardData(db, validDays);
+  const data = await getDashboardData(db, validDays, userId, repo);
 
   return data;
 }
@@ -48,8 +55,20 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
 
       {/* Main */}
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Period Selector */}
-        <PeriodSelector currentDays={data.days} />
+        {/* Period & Repo Selector */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <PeriodSelector currentDays={data.days} />
+          <div className="flex gap-2">
+            <UserSelector users={data.users} />
+            <RepoSelector repos={data.repos} />
+          </div>
+        </div>
+
+        {/* Active Filters */}
+        <ActiveFilters
+          filterUserEmail={data.filterUserEmail}
+          filterRepo={data.filterRepo}
+        />
 
         {/* KPI Cards */}
         <KpiCards kpi={data.kpi} />
