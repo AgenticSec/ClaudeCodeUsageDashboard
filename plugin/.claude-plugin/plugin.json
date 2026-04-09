@@ -2,7 +2,7 @@
   "name": "claude-code-usage-dashboard",
   "description": "Tracks Claude Code session usage (tokens, costs, skills, MCP, subagents) and sends data to a self-hosted dashboard.",
   "author": { "name": "SecDevLab Inc." },
-  "version": "0.0.1",
+  "version": "0.1.0",
   "repository": "https://github.com/AgenticSec/ClaudeCodeUsageDashboard",
   "license": "MIT",
   "keywords": ["usage", "dashboard", "analytics", "cost-tracking", "tokens"]
