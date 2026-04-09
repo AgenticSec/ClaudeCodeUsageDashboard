@@ -148,8 +148,19 @@ def main() -> None:
     post_to_api(dashboard_url, payload)
 
 
+def _get_claude_config_dir() -> Path:
+    """Determine the Claude config directory.
+
+    Checks CLAUDE_CONFIG_DIR environment variable first(or return ~/.claude as default)
+    """
+    config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
+    if config_dir:
+        return Path(config_dir)
+    return Path.home() / ".claude"
+
+
 def find_transcript(session_id: str):
-    claude_dir = Path.home() / ".claude" / "projects"
+    claude_dir = _get_claude_config_dir() / "projects"
     if not claude_dir.exists():
         return None
     for path in claude_dir.rglob(f"{session_id}.jsonl"):
