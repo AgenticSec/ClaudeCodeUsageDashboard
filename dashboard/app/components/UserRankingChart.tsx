@@ -7,6 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useSearchParams } from "react-router";
 import type { UserRankingEntry } from "~/lib/types";
 import { CHART_HEIGHT } from "~/lib/constants";
 
@@ -16,6 +17,8 @@ const Y_AXIS_LABEL_FONT_SIZE = 12;
 const CHART_MARGIN = { left: 20, right: 20, top: 5, bottom: 5 };
 
 export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const chartData = data.map((entry) => ({
     ...entry,
     // Show email prefix for readability
@@ -25,6 +28,12 @@ export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
   if (chartData.length === 0) {
     return <EmptyState />;
   }
+
+  const handleBarClick = (entry: UserRankingEntry & { name: string }) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("user_id", String(entry.user_id));
+    setSearchParams(newParams);
+  };
 
   return (
     <ChartCard title="User Ranking (by Cost)">
@@ -50,7 +59,13 @@ export function UserRankingChart({ data }: { data: UserRankingEntry[] }) {
             contentStyle={{ backgroundColor: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)", color: "var(--tooltip-text)" }}
             labelStyle={{ color: "var(--tooltip-text)" }}
           />
-          <Bar dataKey="total_cost" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+          <Bar
+            dataKey="total_cost"
+            fill="#3b82f6"
+            radius={[0, 4, 4, 0]}
+            cursor="pointer"
+            onClick={handleBarClick}
+          />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>

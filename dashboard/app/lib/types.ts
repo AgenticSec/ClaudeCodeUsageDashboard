@@ -53,9 +53,21 @@ export interface KpiData {
 }
 
 export interface UserRankingEntry {
+  user_id: number;
   email: string;
   total_cost: number;
   total_sessions: number;
+}
+
+export interface UserEntry {
+  user_id: number;
+  email: string;
+  session_count: number;
+}
+
+export interface RepoEntry {
+  repo_name: string;
+  session_count: number;
 }
 
 export interface DistributionEntry {
@@ -81,7 +93,9 @@ export interface DailyToolUsageEntry {
 
 export interface RecentSessionEntry {
   session_id: string;
+  user_id: number;
   email: string;
+  repo_name: string;
   model: string;
   duration_seconds: number;
   conversation_turns: number;
@@ -106,5 +120,10 @@ export interface DashboardData {
   dailyTrend: DailyTrendEntry[];
   dailyToolUsage: DailyToolUsageEntry[];
   recentSessions: RecentSessionEntry[];
+  users: UserEntry[];
+  repos: RepoEntry[];
   days: number;
+  filterUserId?: number;
+  filterUserEmail?: string;
+  filterRepo?: string;
 }

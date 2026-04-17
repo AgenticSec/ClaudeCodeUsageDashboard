@@ -2,10 +2,12 @@ import type {
   IngestPayload,
   KpiData,
   UserRankingEntry,
+  UserEntry,
   DistributionEntry,
   DailyTrendEntry,
   DailyToolUsageEntry,
   RecentSessionEntry,
+  RepoEntry,
   DashboardData,
 } from "./types";
 import { calculateEstimatedCost } from "./cost";
@@ -144,26 +146,84 @@ export async function insertSessionAndEvents(
   };
 }
 
+// SQL expression to extract repo name (last path segment) from project_dir
+const REPO_NAME_EXPR = (prefix: string) => {
+  const col = prefix ? `${prefix}.project_dir` : "project_dir";
+  return `SUBSTR(${col}, LENGTH(RTRIM(${col}, REPLACE(${col}, '/', ''))) + 1)`;
+};
+
+/** Build WHERE clause and bind params for session-table queries */
+function buildSessionFilter(
+  hasDateFilter: boolean,
+  dateFilter: string,
+  userId: number | undefined,
+  repo: string | undefined,
+  prefix = "",
+): { where: string; params: unknown[] } {
+  const p = prefix ? `${prefix}.` : "";
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  if (hasDateFilter) {
+    conditions.push(`${p}first_event_at >= datetime('now', ?)`);
+    params.push(dateFilter);
+  }
+  if (userId !== undefined) {
+    conditions.push(`${p}user_id = ?`);
+    params.push(userId);
+  }
+  if (repo) {
+    conditions.push(`${p}project_dir LIKE '%/' || ?`);
+    params.push(repo);
+  }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  return { where, params };
+}
+
+/** Build WHERE clause for event-table queries, optionally joining to sessions for repo filter */
+function buildEventFilter(
+  hasDateFilter: boolean,
+  dateFilter: string,
+  userId: number | undefined,
+  repo: string | undefined,
+  timestampCol: string,
+  eventAlias: string,
+): { join: string; where: string; params: unknown[] } {
+  const conditions: string[] = [];
+  const params: unknown[] = [];
+  let join = "";
+  if (hasDateFilter) {
+    conditions.push(`${eventAlias}.${timestampCol} >= datetime('now', ?)`);
+    params.push(dateFilter);
+  }
+  if (userId !== undefined) {
+    conditions.push(`${eventAlias}.user_id = ?`);
+    params.push(userId);
+  }
+  if (repo) {
+    join = `JOIN sessions _fs ON _fs.session_id = ${eventAlias}.session_id`;
+    conditions.push(`_fs.project_dir LIKE '%/' || ?`);
+    params.push(repo);
+  }
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  return { join, where, params };
+}
+
 export async function getDashboardData(
   db: D1Database,
-  days: number
+  days: number,
+  userId?: number,
+  repo?: string,
 ): Promise<DashboardData> {
   // days === 0 means "all time" — no date filter
   const hasDateFilter = days > 0;
   const dateFilter = `-${days} days`;
 
-  // Helper to build WHERE clause
-  const sessionDateWhere = hasDateFilter
-    ? "WHERE first_event_at >= datetime('now', ?)"
-    : "";
-  const eventDateWhere = (col: string) =>
-    hasDateFilter ? `WHERE ${col} >= datetime('now', ?)` : "";
-  const sessionJoinDateWhere = hasDateFilter
-    ? "WHERE s.first_event_at >= datetime('now', ?)"
-    : "";
+  // Pre-build common filter clauses
+  const sf = buildSessionFilter(hasDateFilter, dateFilter, userId, repo);
+  const sfJoin = buildSessionFilter(hasDateFilter, dateFilter, userId, repo, "s");
 
   // KPI aggregation
-  const kpiStmt = db.prepare(
+  const kpiRaw = await db.prepare(
     `SELECT
       COUNT(*) as total_sessions,
       COALESCE(SUM(conversation_turns), 0) as total_conversation_turns,
@@ -172,29 +232,21 @@ export async function getDashboardData(
       COALESCE(SUM(subagent_call_count), 0) as total_subagent_calls,
       COALESCE(SUM(input_tokens + output_tokens + cache_read_tokens + cache_creation_tokens), 0) as total_tokens
     FROM sessions
-    ${sessionDateWhere}`
-  );
-  const kpiRaw = await (hasDateFilter
-    ? kpiStmt.bind(dateFilter)
-    : kpiStmt
-  ).first<Omit<KpiData, "total_estimated_cost">>();
+    ${sf.where}`
+  ).bind(...sf.params).first<Omit<KpiData, "total_estimated_cost">>();
 
   // KPI cost: aggregate per model then compute
-  const kpiCostStmt = db.prepare(
+  type ModelTokenRow = { model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number };
+  const kpiCostResult = await db.prepare(
     `SELECT model,
       SUM(input_tokens) as input_tokens,
       SUM(output_tokens) as output_tokens,
       SUM(cache_read_tokens) as cache_read_tokens,
       SUM(cache_creation_tokens) as cache_creation_tokens
     FROM sessions
-    ${sessionDateWhere}
+    ${sf.where}
     GROUP BY model`
-  );
-  type ModelTokenRow = { model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number };
-  const kpiCostResult = await (hasDateFilter
-    ? kpiCostStmt.bind(dateFilter)
-    : kpiCostStmt
-  ).all<ModelTokenRow>();
+  ).bind(...sf.params).all<ModelTokenRow>();
   const totalEstimatedCost = kpiCostResult.results.reduce(
     (sum, r) => sum + calculateEstimatedCost(r.model, r.input_tokens, r.output_tokens, r.cache_read_tokens, r.cache_creation_tokens),
     0
@@ -211,90 +263,73 @@ export async function getDashboardData(
   };
 
   // User ranking by cost (aggregate per user+model, then compute cost in app)
-  const userRankingStmt = db.prepare(
-    `SELECT u.email, s.model,
+  type UserModelRow = { user_id: number; email: string; model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number; session_count: number };
+  const userRankingRaw = await db.prepare(
+    `SELECT u.id as user_id, u.email, s.model,
       SUM(s.input_tokens) as input_tokens,
       SUM(s.output_tokens) as output_tokens,
       SUM(s.cache_read_tokens) as cache_read_tokens,
       SUM(s.cache_creation_tokens) as cache_creation_tokens,
       COUNT(*) as session_count
     FROM sessions s JOIN users u ON s.user_id = u.id
-    ${sessionJoinDateWhere}
+    ${sfJoin.where}
     GROUP BY s.user_id, s.model`
-  );
-  type UserModelRow = { email: string; model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number; session_count: number };
-  const userRankingRaw = await (hasDateFilter
-    ? userRankingStmt.bind(dateFilter)
-    : userRankingStmt
-  ).all<UserModelRow>();
+  ).bind(...sfJoin.params).all<UserModelRow>();
 
-  const userMap = new Map<string, { total_cost: number; total_sessions: number }>();
+  const userMap = new Map<number, { user_id: number; email: string; total_cost: number; total_sessions: number }>();
   for (const r of userRankingRaw.results) {
     const cost = calculateEstimatedCost(r.model, r.input_tokens, r.output_tokens, r.cache_read_tokens, r.cache_creation_tokens);
-    const existing = userMap.get(r.email) ?? { total_cost: 0, total_sessions: 0 };
+    const existing = userMap.get(r.user_id) ?? { user_id: r.user_id, email: r.email, total_cost: 0, total_sessions: 0 };
     existing.total_cost += cost;
     existing.total_sessions += r.session_count;
-    userMap.set(r.email, existing);
+    userMap.set(r.user_id, existing);
   }
-  const userRanking: UserRankingEntry[] = Array.from(userMap.entries())
-    .map(([email, data]) => ({ email, ...data }))
+  const userRanking: UserRankingEntry[] = Array.from(userMap.values())
     .sort((a, b) => b.total_cost - a.total_cost)
     .slice(0, 10);
 
   // Skill distribution
-  const skillDistStmt = db.prepare(
-    `SELECT skill_name as name, COUNT(*) as count
-    FROM skill_usage_events
-    ${eventDateWhere("timestamp")}
-    GROUP BY skill_name
+  const skillEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+  const skillDistResult = await db.prepare(
+    `SELECT e.skill_name as name, COUNT(*) as count
+    FROM skill_usage_events e ${skillEf.join}
+    ${skillEf.where}
+    GROUP BY e.skill_name
     ORDER BY count DESC`
-  );
-  const skillDistResult = await (hasDateFilter
-    ? skillDistStmt.bind(dateFilter)
-    : skillDistStmt
-  ).all<DistributionEntry>();
+  ).bind(...skillEf.params).all<DistributionEntry>();
 
   // MCP server distribution
-  const mcpDistStmt = db.prepare(
-    `SELECT mcp_server as name, COUNT(*) as count
-    FROM mcp_usage_events
-    ${eventDateWhere("timestamp")}
-    GROUP BY mcp_server
+  const mcpEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+  const mcpDistResult = await db.prepare(
+    `SELECT e.mcp_server as name, COUNT(*) as count
+    FROM mcp_usage_events e ${mcpEf.join}
+    ${mcpEf.where}
+    GROUP BY e.mcp_server
     ORDER BY count DESC`
-  );
-  const mcpDistResult = await (hasDateFilter
-    ? mcpDistStmt.bind(dateFilter)
-    : mcpDistStmt
-  ).all<DistributionEntry>();
+  ).bind(...mcpEf.params).all<DistributionEntry>();
 
   // Model distribution
-  const modelDistStmt = db.prepare(
+  const modelDistResult = await db.prepare(
     `SELECT model as name, COUNT(*) as count
     FROM sessions
-    ${sessionDateWhere}
+    ${sf.where}
     GROUP BY model
     ORDER BY count DESC`
-  );
-  const modelDistResult = await (hasDateFilter
-    ? modelDistStmt.bind(dateFilter)
-    : modelDistStmt
-  ).all<DistributionEntry>();
+  ).bind(...sf.params).all<DistributionEntry>();
 
   // Subagent distribution
-  const subagentDistStmt = db.prepare(
-    `SELECT COALESCE(subagent_type, '(unspecified)') as name, COUNT(*) as count
-    FROM subagent_usage_events
-    ${eventDateWhere("timestamp")}
-    GROUP BY subagent_type
+  const subEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+  const subagentDistResult = await db.prepare(
+    `SELECT COALESCE(e.subagent_type, '(unspecified)') as name, COUNT(*) as count
+    FROM subagent_usage_events e ${subEf.join}
+    ${subEf.where}
+    GROUP BY e.subagent_type
     ORDER BY count DESC`
-  );
-  const subagentDistResult = await (hasDateFilter
-    ? subagentDistStmt.bind(dateFilter)
-    : subagentDistStmt
-  ).all<DistributionEntry>();
+  ).bind(...subEf.params).all<DistributionEntry>();
 
   // Daily cost/token trend (aggregate per date+model, compute cost in app)
-  const dailyTrendStmt = db.prepare(
+  type DailyModelRow = { date: string; model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number };
+  const dailyTrendRaw = await db.prepare(
     `SELECT
       DATE(first_event_at) as date,
       model,
@@ -303,15 +338,10 @@ export async function getDashboardData(
       SUM(cache_read_tokens) as cache_read_tokens,
       SUM(cache_creation_tokens) as cache_creation_tokens
     FROM sessions
-    ${sessionDateWhere}
+    ${sf.where}
     GROUP BY DATE(first_event_at), model
     ORDER BY date`
-  );
-  type DailyModelRow = { date: string; model: string; input_tokens: number; output_tokens: number; cache_read_tokens: number; cache_creation_tokens: number };
-  const dailyTrendRaw = await (hasDateFilter
-    ? dailyTrendStmt.bind(dateFilter)
-    : dailyTrendStmt
-  ).all<DailyModelRow>();
+  ).bind(...sf.params).all<DailyModelRow>();
 
   const dailyMap = new Map<string, DailyTrendEntry>();
   for (const r of dailyTrendRaw.results) {
@@ -326,58 +356,87 @@ export async function getDashboardData(
   }
   const dailyTrend = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
 
-  // Daily tool usage
-  const skillSubWhere = hasDateFilter
-    ? "WHERE timestamp >= datetime('now', ?)"
-    : "";
+  // Daily tool usage — each sub-query needs its own filter
+  const skillToolEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+  const mcpToolEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+  const subToolEf = buildEventFilter(hasDateFilter, dateFilter, userId, repo, "timestamp", "e");
+
   const dailyToolQuery = `SELECT
       date,
       SUM(skill_count) as skill_count,
       SUM(mcp_count) as mcp_count,
       SUM(subagent_count) as subagent_count
     FROM (
-      SELECT DATE(timestamp) as date, COUNT(*) as skill_count, 0 as mcp_count, 0 as subagent_count
-      FROM skill_usage_events ${skillSubWhere}
-      GROUP BY DATE(timestamp)
+      SELECT DATE(e.timestamp) as date, COUNT(*) as skill_count, 0 as mcp_count, 0 as subagent_count
+      FROM skill_usage_events e ${skillToolEf.join}
+      ${skillToolEf.where}
+      GROUP BY DATE(e.timestamp)
       UNION ALL
-      SELECT DATE(timestamp) as date, 0, COUNT(*), 0
-      FROM mcp_usage_events ${skillSubWhere}
-      GROUP BY DATE(timestamp)
+      SELECT DATE(e.timestamp) as date, 0, COUNT(*), 0
+      FROM mcp_usage_events e ${mcpToolEf.join}
+      ${mcpToolEf.where}
+      GROUP BY DATE(e.timestamp)
       UNION ALL
-      SELECT DATE(timestamp) as date, 0, 0, COUNT(*)
-      FROM subagent_usage_events ${skillSubWhere}
-      GROUP BY DATE(timestamp)
+      SELECT DATE(e.timestamp) as date, 0, 0, COUNT(*)
+      FROM subagent_usage_events e ${subToolEf.join}
+      ${subToolEf.where}
+      GROUP BY DATE(e.timestamp)
     )
     GROUP BY date
     ORDER BY date`;
-  const dailyToolStmt = db.prepare(dailyToolQuery);
-  const dailyToolResult = await (hasDateFilter
-    ? dailyToolStmt.bind(dateFilter, dateFilter, dateFilter)
-    : dailyToolStmt
-  ).all<DailyToolUsageEntry>();
+  const dailyToolResult = await db.prepare(dailyToolQuery)
+    .bind(...skillToolEf.params, ...mcpToolEf.params, ...subToolEf.params)
+    .all<DailyToolUsageEntry>();
 
   // Recent sessions
-  const recentSessionsStmt = db.prepare(
+  type RecentSessionRow = Omit<RecentSessionEntry, "estimated_cost_usd">;
+  const recentSessionsRaw = await db.prepare(
     `SELECT
-      s.session_id, u.email, s.model, s.duration_seconds,
+      s.session_id, s.user_id, u.email,
+      ${REPO_NAME_EXPR("s")} as repo_name,
+      s.model, s.duration_seconds,
       s.conversation_turns, s.skill_call_count, s.mcp_call_count,
       s.subagent_call_count, s.input_tokens, s.output_tokens,
       s.cache_read_tokens, s.cache_creation_tokens, s.first_event_at
     FROM sessions s JOIN users u ON s.user_id = u.id
-    ${sessionJoinDateWhere}
+    ${sfJoin.where}
     ORDER BY s.first_event_at DESC
     LIMIT 20`
-  );
-  type RecentSessionRow = Omit<RecentSessionEntry, "estimated_cost_usd">;
-  const recentSessionsRaw = await (hasDateFilter
-    ? recentSessionsStmt.bind(dateFilter)
-    : recentSessionsStmt
-  ).all<RecentSessionRow>();
+  ).bind(...sfJoin.params).all<RecentSessionRow>();
 
   const recentSessions: RecentSessionEntry[] = recentSessionsRaw.results.map((r) => ({
     ...r,
     estimated_cost_usd: calculateEstimatedCost(r.model, r.input_tokens, r.output_tokens, r.cache_read_tokens, r.cache_creation_tokens),
   }));
+
+  // Users list (date-filtered only, no user/repo filter so the selector always shows all users)
+  const dateOnlyFilter = buildSessionFilter(hasDateFilter, dateFilter, undefined, undefined);
+  const dateOnlyJoinFilter = buildSessionFilter(hasDateFilter, dateFilter, undefined, undefined, "s");
+  const usersResult = await db.prepare(
+    `SELECT u.id as user_id, u.email, COUNT(*) as session_count
+    FROM sessions s JOIN users u ON s.user_id = u.id
+    ${dateOnlyJoinFilter.where}
+    GROUP BY u.id
+    ORDER BY session_count DESC`
+  ).bind(...dateOnlyJoinFilter.params).all<UserEntry>();
+
+  // Repos list (date-filtered only, no user/repo filter so the selector always shows all repos)
+  const reposResult = await db.prepare(
+    `SELECT
+      ${REPO_NAME_EXPR("")} as repo_name,
+      COUNT(*) as session_count
+    FROM sessions
+    ${dateOnlyFilter.where}
+    GROUP BY repo_name
+    ORDER BY session_count DESC`
+  ).bind(...dateOnlyFilter.params).all<RepoEntry>();
+
+  // Look up user email for filter display
+  let filterUserEmail: string | undefined;
+  if (userId !== undefined) {
+    const userRow = await db.prepare("SELECT email FROM users WHERE id = ?").bind(userId).first<{ email: string }>();
+    filterUserEmail = userRow?.email;
+  }
 
   return {
     kpi: kpiResult,
@@ -389,6 +448,11 @@ export async function getDashboardData(
     dailyTrend,
     dailyToolUsage: dailyToolResult.results,
     recentSessions,
+    users: usersResult.results,
+    repos: reposResult.results,
     days,
+    filterUserId: userId,
+    filterUserEmail,
+    filterRepo: repo,
   };
 }
