@@ -1,7 +1,7 @@
 {
   "name": "claude-code-usage-dashboard",
   "description": "Self-hosted dashboard to visualize Claude Code usage across your team",
-  "author": "SecDevLab Inc.",
+  "author": "AgenticSec Inc.",
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "SecDevLab",
-  "owner": { "name": "SecDevLab Inc." },
+  "name": "AgenticSec",
+  "owner": { "name": "AgenticSec Inc." },
   "metadata": {
     "description": "Claude Code Usage Dashboard plugin for tracking session analytics"
   },
@@ -9,7 +9,7 @@
     {
       "name": "claude-code-usage-dashboard-plugin",
       "description": "Tracks Claude Code session usage and sends data to a self-hosted dashboard.",
-      "author": { "name": "SecDevLab Inc." },
+      "author": { "name": "AgenticSec Inc." },
       "source": "./plugin",
       "category": "monitoring"
     }

@@ -7,7 +7,7 @@ JSON serialization is required for HTTP POST to the dashboard ingest API.
 Transcript format reference:
   https://platform.claude.com/docs/en/agent-sdk/typescript
 
-Author: SecDevLab Inc.
+Author: AgenticSec Inc.
 License: MIT
 """
 

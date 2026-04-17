@@ -27,7 +27,7 @@ Installing the plugin enables automatic data submission to the dashboard when a 
 claude plugin marketplace add https://github.com/AgenticSec/ClaudeCodeUsageDashboard.git
 
 # Install the plugin (applies to all projects)
-claude plugin install claude-code-usage-dashboard-plugin@SecDevLab
+claude plugin install claude-code-usage-dashboard-plugin@AgenticSec
 ```
 
 ### 2. Set environment variables
@@ -95,7 +95,7 @@ To test with a local clone of this repository instead of the remote:
 claude plugin marketplace add ./
 
 # Install the plugin
-claude plugin install claude-code-usage-dashboard-plugin@SecDevLab
+claude plugin install claude-code-usage-dashboard-plugin@AgenticSec
 ```
 
 ## Architecture
