@@ -146,10 +146,13 @@ export async function insertSessionAndEvents(
   };
 }
 
-// SQL expression to extract repo name (last path segment) from project_dir
+// SQL expression to extract repo name (last path segment) from project_dir.
+// Normalize Windows-style backslashes to '/' first so the same logic works for
+// both POSIX paths and paths captured on Windows (e.g. "D:\\Work\\repo").
 const REPO_NAME_EXPR = (prefix: string) => {
   const col = prefix ? `${prefix}.project_dir` : "project_dir";
-  return `SUBSTR(${col}, LENGTH(RTRIM(${col}, REPLACE(${col}, '/', ''))) + 1)`;
+  const norm = `REPLACE(${col}, '\\', '/')`;
+  return `SUBSTR(${norm}, LENGTH(RTRIM(${norm}, REPLACE(${norm}, '/', ''))) + 1)`;
 };
 
 /** Build WHERE clause and bind params for session-table queries */
@@ -172,7 +175,7 @@ function buildSessionFilter(
     params.push(userId);
   }
   if (repo) {
-    conditions.push(`${p}project_dir LIKE '%/' || ?`);
+    conditions.push(`REPLACE(${p}project_dir, '\\', '/') LIKE '%/' || ?`);
     params.push(repo);
   }
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -201,7 +204,7 @@ function buildEventFilter(
   }
   if (repo) {
     join = `JOIN sessions _fs ON _fs.session_id = ${eventAlias}.session_id`;
-    conditions.push(`_fs.project_dir LIKE '%/' || ?`);
+    conditions.push(`REPLACE(_fs.project_dir, '\\', '/') LIKE '%/' || ?`);
     params.push(repo);
   }
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
