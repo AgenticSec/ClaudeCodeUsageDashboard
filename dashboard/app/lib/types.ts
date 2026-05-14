@@ -107,7 +107,7 @@ export interface RecentSessionEntry {
   cache_read_tokens: number;
   cache_creation_tokens: number;
   estimated_cost_usd: number;
-  first_event_at: string;
+  last_event_at: string;
 }
 
 export interface DashboardData {

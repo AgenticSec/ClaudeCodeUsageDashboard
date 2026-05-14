@@ -104,7 +104,7 @@ export function RecentSessionsTable({
                     </span>
                   </td>
                   <td className="py-2 px-2 text-gray-600 dark:text-gray-400">
-                    {formatDate(s.first_event_at)}
+                    {formatDate(s.last_event_at)}
                   </td>
                   <td className="py-2 px-2 text-right text-gray-600 dark:text-gray-400">
                     {formatDuration(s.duration_seconds)}

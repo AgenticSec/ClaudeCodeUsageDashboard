@@ -413,10 +413,10 @@ export async function getDashboardData(
       s.model, s.duration_seconds,
       s.conversation_turns, s.skill_call_count, s.mcp_call_count,
       s.subagent_call_count, s.input_tokens, s.output_tokens,
-      s.cache_read_tokens, s.cache_creation_tokens, s.first_event_at
+      s.cache_read_tokens, s.cache_creation_tokens, s.last_event_at
     FROM sessions s JOIN users u ON s.user_id = u.id
     ${sfJoin.where}
-    ORDER BY s.first_event_at DESC
+    ORDER BY s.last_event_at DESC
     LIMIT 20`
   ).bind(...sfJoin.params).all<RecentSessionRow>();
 
