@@ -45,7 +45,7 @@ Subsequent deployments can use the same command.
 > This section is optional and provided as a reference. The dashboard works without Zero Trust. Configure it only if you need access control in your environment.
 
 Configure access control with Cloudflare Zero Trust.
-A single Access Application handles two types of authentication: dashboard access (browser) and Ingest API (Stop hook).
+A single Access Application handles two types of authentication: dashboard access (browser) and Ingest API (SessionEnd hook).
 
 ### Step 1: Create an Access Application
 
@@ -81,7 +81,7 @@ Example:
 
 ### Step 3: Create a Service Token (for Ingest API)
 
-Create a Service Token for API submissions from the Stop hook.
+Create a Service Token for API submissions from the SessionEnd hook.
 
 1. Zero Trust dashboard → **Access control** → **Service Credentials** → **Service Tokens**
 2. Click **Create Service Token**

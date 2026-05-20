@@ -29,19 +29,7 @@ export async function upsertUser(
   return row!.id;
 }
 
-export async function checkSessionExists(
-  db: D1Database,
-  sessionId: string
-): Promise<boolean> {
-  const row = await db
-    .prepare("SELECT 1 FROM sessions WHERE session_id = ?")
-    .bind(sessionId)
-    .first();
-
-  return row !== null;
-}
-
-export async function insertSessionAndEvents(
+export async function upsertSessionAndEvents(
   db: D1Database,
   userId: number,
   payload: IngestPayload
@@ -54,7 +42,9 @@ export async function insertSessionAndEvents(
 
   const statements: D1PreparedStatement[] = [];
 
-  // Insert session
+  // SessionEnd hook delivers a single cumulative snapshot per session and may
+  // re-fire on retries. Upsert + DELETE-then-INSERT keeps the row idempotent
+  // on duplicate uploads.
   statements.push(
     db
       .prepare(
@@ -63,7 +53,23 @@ export async function insertSessionAndEvents(
           model, first_event_at, last_event_at,
           skill_call_count, mcp_call_count, subagent_call_count, conversation_turns,
           input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+          user_id = excluded.user_id,
+          project_dir = excluded.project_dir,
+          git_branch = excluded.git_branch,
+          claude_code_version = excluded.claude_code_version,
+          model = excluded.model,
+          first_event_at = excluded.first_event_at,
+          last_event_at = excluded.last_event_at,
+          skill_call_count = excluded.skill_call_count,
+          mcp_call_count = excluded.mcp_call_count,
+          subagent_call_count = excluded.subagent_call_count,
+          conversation_turns = excluded.conversation_turns,
+          input_tokens = excluded.input_tokens,
+          output_tokens = excluded.output_tokens,
+          cache_read_tokens = excluded.cache_read_tokens,
+          cache_creation_tokens = excluded.cache_creation_tokens`
       )
       .bind(
         session.session_id,
@@ -83,6 +89,16 @@ export async function insertSessionAndEvents(
         session.cache_read_tokens,
         session.cache_creation_tokens
       )
+  );
+
+  statements.push(
+    db.prepare("DELETE FROM skill_usage_events WHERE session_id = ?").bind(session.session_id)
+  );
+  statements.push(
+    db.prepare("DELETE FROM mcp_usage_events WHERE session_id = ?").bind(session.session_id)
+  );
+  statements.push(
+    db.prepare("DELETE FROM subagent_usage_events WHERE session_id = ?").bind(session.session_id)
   );
 
   // Insert skill events
@@ -400,10 +416,10 @@ export async function getDashboardData(
       s.model, s.duration_seconds,
       s.conversation_turns, s.skill_call_count, s.mcp_call_count,
       s.subagent_call_count, s.input_tokens, s.output_tokens,
-      s.cache_read_tokens, s.cache_creation_tokens, s.first_event_at
+      s.cache_read_tokens, s.cache_creation_tokens, s.last_event_at
     FROM sessions s JOIN users u ON s.user_id = u.id
     ${sfJoin.where}
-    ORDER BY s.first_event_at DESC
+    ORDER BY s.last_event_at DESC
     LIMIT 20`
   ).bind(...sfJoin.params).all<RecentSessionRow>();
 

@@ -2,8 +2,7 @@ import type { Route } from "./+types/api.v1.usage.ingest";
 import type { IngestPayload } from "~/lib/types";
 import {
   upsertUser,
-  checkSessionExists,
-  insertSessionAndEvents,
+  upsertSessionAndEvents,
 } from "~/lib/db.server";
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -50,17 +49,8 @@ export async function action({ request, context }: Route.ActionArgs) {
     // Upsert user
     const userId = await upsertUser(db, payload.email);
 
-    // Check for duplicate session
-    const exists = await checkSessionExists(db, session.session_id);
-    if (exists) {
-      return Response.json(
-        { error: "Session already uploaded", session_id: session.session_id },
-        { status: 409 }
-      );
-    }
-
-    // Insert session and events
-    const result = await insertSessionAndEvents(db, userId, payload);
+    // SessionEnd hook may re-fire on retries — upsert keeps the latest snapshot.
+    const result = await upsertSessionAndEvents(db, userId, payload);
 
     return Response.json({
       success: true,

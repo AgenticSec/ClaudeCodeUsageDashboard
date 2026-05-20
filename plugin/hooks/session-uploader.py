@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code Stop hook: parse transcript and upload usage data to dashboard.
+"""Claude Code SessionEnd hook: parse transcript and upload usage data to dashboard.
 
 This is a standalone CLI script for external API communication.
 JSON serialization is required for HTTP POST to the dashboard ingest API.
@@ -46,6 +46,14 @@ BUILTIN_COMMANDS = frozenset(
 )
 
 
+def read_plugin_version() -> str | None:
+    manifest = Path(__file__).resolve().parent.parent / ".claude-plugin" / "plugin.json"
+    try:
+        return json.loads(manifest.read_text()).get("version")
+    except (OSError, ValueError):
+        return None
+
+
 def run_status_check() -> None:
     """Print status of dashboard configuration for the current process."""
     config_path = Path.home() / ".claude-code-usage-dashboard" / "env"
@@ -59,8 +67,10 @@ def run_status_check() -> None:
 
     lines = ["Claude Code Usage Dashboard — Status", "=" * 40, ""]
 
-    # Plugin loaded (we're running, so it is)
-    lines.append("✓ Plugin loaded (this session)")
+    # Plugin loaded (we're running, so it is) + version
+    version = read_plugin_version()
+    version_suffix = f" (v{version})" if version else ""
+    lines.append(f"✓ Plugin loaded (this session){version_suffix}")
 
     # Config file
     if config_path.exists():

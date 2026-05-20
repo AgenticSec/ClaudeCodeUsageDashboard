@@ -2,13 +2,13 @@
 
 A self-hosted dashboard to visualize and share [Claude Code](https://docs.anthropic.com/en/docs/claude-code) usage across your team.
 
-A Stop hook automatically parses transcripts at session end, collecting token consumption, skill / MCP / sub-agent usage, and estimated costs into interactive charts.
+A SessionEnd hook automatically parses transcripts at session end, collecting token consumption, skill / MCP / sub-agent usage, and estimated costs into interactive charts.
 
 ![Dashboard](images/dashboard-screenshot.png)
 
 ## Features
 
-- **Data Collection** — Zero-config data collection via Stop hook
+- **Data Collection** — Zero-config data collection via SessionEnd hook
 - **Token & Cost Tracking** — Input / output / cache read / cache creation tokens with per-model cost estimation
 - **Skill Analysis** — Invocation frequency of `/commit` and other slash commands
 - **MCP Server Analysis** — Call counts by MCP server name and method
@@ -63,6 +63,15 @@ You can verify the setup completed successfully:
 
 **In-session check**: Run `/claude-code-usage-dashboard:status` in any Claude Code session to see whether the dashboard is enabled for the current process. This reports plugin status, config, auth, and whether the project directory is allowed.
 
+### Update
+
+`claude plugin install` is a no-op if the plugin is already installed. To pick up a new version, refresh the marketplace and run `update` (restart Claude Code afterwards).
+
+```bash
+claude plugin marketplace update AgenticSec
+claude plugin update claude-code-usage-dashboard-plugin@AgenticSec
+```
+
 ### Uninstall
 
 ```bash
@@ -104,7 +113,7 @@ claude plugin install claude-code-usage-dashboard-plugin@AgenticSec
 Claude Code session ends
   │
   ▼
-Stop hook (session-uploader.py)
+SessionEnd hook (session-uploader.py)
   │  Parses ~/.claude/projects/{hash}/{session_id}.jsonl
   │  Extracts tokens, skills, MCP calls, sub-agent events
   │
@@ -123,7 +132,7 @@ Dashboard UI (Recharts)
 
 ## Data Collection Hook
 
-The Stop hook (`hooks/session-uploader.py`) runs automatically when a Claude Code session ends.
+The SessionEnd hook (`hooks/session-uploader.py`) runs automatically when a Claude Code session ends.
 
 ### Collected Data
 
@@ -139,7 +148,7 @@ The Stop hook (`hooks/session-uploader.py`) runs automatically when a Claude Cod
 
 ### How the Hook Works
 
-1. Stop hook fires at session end
+1. SessionEnd hook fires at session end
 2. Parses `~/.claude/projects/{hash}/{session_id}.jsonl`
 3. Extracts skill usage, MCP tool usage, sub-agent usage, and token counts
 4. Retrieves email via `claude auth status`
@@ -147,12 +156,12 @@ The Stop hook (`hooks/session-uploader.py`) runs automatically when a Claude Cod
 
 ### Hook Configuration
 
-Verify the Stop hook is registered in `.claude/settings.json`:
+Verify the SessionEnd hook is registered in `.claude/settings.json`:
 
 ```json
 {
   "hooks": {
-    "Stop": [
+    "SessionEnd": [
       {
         "hooks": [
           {
